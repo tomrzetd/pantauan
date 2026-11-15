@@ -1,0 +1,28 @@
+name: PANTAUAN v3 — Validasi Tanpa Deploy
+on:
+  push:
+    branches:
+      - feat/easy-expert-kode-aktivasi-v3
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  validate:
+    name: Frontend & registry aman
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse frontend & check registry
+        run: |
+          node --check app.js
+          node --check sw.js
+          node tests/public-registry.test.mjs
+      - name: Pastikan secret & backend tidak masuk repo frontend
+        run: |
+          test ! -e backend/Dashboard.gs
+          ! grep -rE 'BT_LICENSE_HMAC_KEY|SHEET_ID=|ADMIN_KEY_SHA256=' index.html app.js styles.css sw.js manifest.webmanifest schools.json
+          test -f assets/icon.svg

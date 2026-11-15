@@ -440,7 +440,7 @@
     });
     window.addEventListener('keydown',e=>{if(e.key==='Escape')showDialog(false);});
     if(restoreSession()) {status('Menghubungkan','');void getSummary().then(ok=>{if(!ok)showDialog();});}
-    else {D.data=synthetic();status('Mode demo','demo');render();showDialog();}
+    else {D.data=synthetic();status('Mode demo','demo');render();showDialog(false);}
     if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(()=>{});
     D.tick=setInterval(()=>{if(D.active)void getSummary();},25000);
   }

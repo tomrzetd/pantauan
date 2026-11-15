@@ -13,7 +13,7 @@
   const formatPct = x => `${number.format(x)}%`;
   const demoSchool = 'SMP Contoh (Simulasi)';
   const D = {
-    active:false,server:safeStorage.getItem('pantauan-server')||'',key:'',data:null,busy:false,
+    active:false,server:'',session:'',expiresAt:0,schoolCode:'',data:null,busy:false,
     filters:{period:'ALL',grade:'ALL',room:'ALL'}, tick:null, roster:null, rosterBusy:false
   };
   function synthetic() {
@@ -54,8 +54,7 @@
   }
   function showDialog(open=true) {
     $('settingsDialog').classList.toggle('hidden',!open);
-    $('serverInput').value=D.server;
-    if(open) $('keyInput').focus();
+    if(open) $('activationInput').focus();
     $('connectionError').textContent='';
   }
   function status(label,kind) {
@@ -234,11 +233,11 @@
       let result;
       if(!D.active){result=demoRoster(period,grade,room);}
       else{
-        if(!D.key)throw new Error('Silakan login ulang dengan kode akses panitia');
+        if(!D.session)throw new Error('Sesi habis, aktivasi ulang');
         const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),20000);
         try{
           const res=await fetch(D.server,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
-            body:JSON.stringify({action:'roster',key:D.key,period,grade,room}),cache:'no-store',redirect:'follow',signal:ctrl.signal});
+            body:JSON.stringify({action:'roster',session:D.session,period,grade,room}),cache:'no-store',redirect:'follow',signal:ctrl.signal});
           if(!res.ok)throw new Error(`HTTP ${res.status}`);
           result=await res.json();
         }finally{clearTimeout(timer);}
@@ -315,15 +314,15 @@
     document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
   async function getSummary(){
-    if(!D.active||!D.server||!D.key||D.busy||document.hidden)return;
+    if(!D.active||!D.server||!D.session||D.busy||document.hidden)return;
     D.busy=true;$('refreshBtn').disabled=true;
     try {
       const ctrl=new AbortController();const timeout=setTimeout(()=>ctrl.abort(),20000);
       let resp;
-      try {resp=await fetch(D.server,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'summary',key:D.key}),cache:'no-store',redirect:'follow',signal:ctrl.signal});}finally{clearTimeout(timeout);}
+      try {resp=await fetch(D.server,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'summary',session:D.session}),cache:'no-store',redirect:'follow',signal:ctrl.signal});}finally{clearTimeout(timeout);}
       if(!resp.ok)throw new Error(`Server membalas HTTP ${resp.status}`);
       const data=await resp.json();
-      if(!data.ok){if(/kode akses/i.test(data.error||'')){D.key='';D.roster=null;showDialog();}throw new Error(data.error||'Server menolak permintaan');}
+      if(!data.ok){if(/sesi habis|aktivasi ulang/i.test(data.error||'')){clearSession();D.roster=null;showDialog();}throw new Error(data.error||'Server menolak permintaan');}
       if(!Array.isArray(data.exams))throw new Error('Format data dashboard tidak dikenali');
       const wasLive=D.data?.version&&D.active;
       const oldTotal=wasLive?(D.data.exams||[]).reduce((sum,e)=>sum+safeInt(e.received),0):null;
@@ -335,30 +334,89 @@
       return true;
     }catch(error){status('Koneksi terganggu','error');const msg=error?.name==='AbortError'?'Server terlalu lama merespons':error?.message||'Jaringan gagal';
       $('updatedAt').textContent='Gagal memperbarui: '+msg;
-      $('connectionError').textContent=msg+' — periksa URL, akses Web App, izin, dan kode panitia.';
+      $('connectionError').textContent=msg+' — periksa internet atau hubungi operator sekolah.';
       return false;
     }finally{D.busy=false;$('refreshBtn').disabled=false;}
   }
-  async function connect(ev){
-    ev.preventDefault();const url=$('serverInput').value.trim(),key=$('keyInput').value;
-    if(!/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(url)){$('connectionError').textContent='Gunakan URL Web App dari Apps Script Dashboard, bukan URL editor.';return;}
-    if(key.length<32){$('connectionError').textContent='Kode admin terlalu pendek. Gunakan kode yang dibuat generator operator.';return;}
-    D.server=url;D.key=key;D.active=true;clearRoster('Pilih kembali rombel untuk membuka nilai sekolah.');
-    $('connectionError').textContent='Menghubungkan…';
-    const ok=await getSummary();
-    if(ok){safeStorage.setItem('pantauan-server',url);$('keyInput').value='';showDialog(false);}
+
+  function clearSession(){
+    safeStorage.removeItem('pantauan-session-v3');
+    D.session='';D.expiresAt=0;D.server='';D.schoolCode='';D.active=false;
   }
-  function setDemo(){D.active=false;D.key='';D.roster=null;D.data=synthetic();
+  const activationFormat=/^([A-Z0-9]{3,8})-([A-HJ-NP-Z2-9]{4})-([A-HJ-NP-Z2-9]{4})-([A-HJ-NP-Z2-9]{4})$/;
+  const endpointFormat=/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/;
+  async function apiRequest(url,body){
+    const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),20000);
+    try{
+      const resp=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body:JSON.stringify(body),cache:'no-store',redirect:'follow',signal:ctrl.signal});
+      if(!resp.ok)throw new Error('Koneksi server gagal: HTTP '+resp.status);
+      return await resp.json();
+    }finally{clearTimeout(timer);}
+  }
+  async function lookupSchool(prefix){
+    const res=await fetch('./schools.json',{cache:'no-store'});
+    if(!res.ok)throw new Error('Daftar sekolah belum tersedia. Hubungi operator.');
+    const registry=await res.json();
+    if(!Array.isArray(registry.schools))throw new Error('Format daftar sekolah tidak dikenali');
+    const school=registry.schools.find(x=>x.code===prefix);
+    if(!school||!endpointFormat.test(String(school.endpoint||'')))
+      throw new Error('Sekolah belum didaftarkan oleh operator.');
+    return school;
+  }
+  async function connect(ev){
+    ev.preventDefault();const field=$('activationInput');
+    const code=field.value.trim().toUpperCase().replace(/\s+/g,'');
+    const found=activationFormat.exec(code);
+    if(!found){$('connectionError').textContent='Format kode belum benar. Contoh: JLK2-XXXX-XXXX-XXXX';return;}
+    const button=$('connectionForm').querySelector('button[type="submit"]');
+    button.disabled=true;$('connectionError').textContent='Memeriksa kode sekolah…';
+    try{
+      const school=await lookupSchool(found[1]);
+      const auth=await apiRequest(school.endpoint,{action:'activate',code});
+      if(!auth.ok||typeof auth.session!=='string'||!Number.isFinite(Number(auth.expiresAt))||Number(auth.expiresAt)<=Date.now())
+        throw new Error(auth.error||'Aktivasi ditolak');
+      D.server=school.endpoint;D.session=auth.session;D.expiresAt=Number(auth.expiresAt);
+      D.schoolCode=school.code;D.active=true;D.data=null;
+      status('Memuat data sekolah','');
+      const ok=await getSummary();
+      if(!ok)throw new Error('Aktivasi diterima, tetapi data sekolah gagal dimuat. Coba lagi.');
+      safeStorage.setItem('pantauan-session-v3',JSON.stringify({server:D.server,session:D.session,
+        expiresAt:D.expiresAt,schoolCode:D.schoolCode}));
+      field.value='';showDialog(false);toast('PANTAUAN aktif! Data sekolah berhasil ditampilkan.');
+    }catch(err){
+      clearSession();D.data=null;status('Belum terhubung','error');
+      $('connectionError').textContent=err?.name==='AbortError'?'Server tidak merespons. Coba lagi.':err.message;
+    }finally{button.disabled=false;}
+  }
+  function setDemo(){clearSession();D.roster=null;D.data=synthetic();
     $('rosterHead').replaceChildren();$('rosterBody').replaceChildren();$('rosterHint').textContent='SIMULASI • Pilih asesmen dan rombel untuk melihat contoh siswa fiktif.';
     $('searchStudent').value='';$('searchStudent').disabled=true;$('exportRoster').disabled=true;
     status('Mode demo','demo');D.filters={period:'ALL',grade:'ALL',room:'ALL'};render();showDialog(false);
   }
+  function setMode(mode){
+    const expert=mode==='expert';document.body.dataset.mode=expert?'expert':'easy';
+    safeStorage.setItem('pantauan-mode',document.body.dataset.mode);
+    $('modeToggle').textContent=expert?'⚙ Expert':'✓ Easy';
+    $('modeToggle').setAttribute('aria-pressed',String(expert));
+    $('modeToggle').setAttribute('aria-label',expert?'Aktifkan tampilan sederhana Easy':'Aktifkan tampilan lengkap Expert');
+  }
+  function restoreSession(){
+    let data;try{data=JSON.parse(safeStorage.getItem('pantauan-session-v3')||'null');}catch(_){data=null;}
+    if(!data||!endpointFormat.test(String(data.server||''))||!data.session||Number(data.expiresAt)<=Date.now()){
+      clearSession();return false;
+    }
+    D.server=data.server;D.session=data.session;D.expiresAt=Number(data.expiresAt);
+    D.schoolCode=data.schoolCode||'';D.active=true;return true;
+  }
   function init(){
     $('openSettings').addEventListener('click',()=>showDialog());$('demoConnect').addEventListener('click',()=>showDialog());
     $('closeSettings').addEventListener('click',()=>showDialog(false));$('previewDemo').addEventListener('click',setDemo);
-    $('disconnectBtn').addEventListener('click',()=>{safeStorage.removeItem('pantauan-server');D.server='';setDemo();});
+    $('disconnectBtn').addEventListener('click',()=>{setDemo();toast('Perangkat keluar dari sekolah.');});
     $('connectionForm').addEventListener('submit',connect);
     $('refreshBtn').addEventListener('click',()=>D.active?getSummary():render());
+    $('modeToggle').addEventListener('click',()=>setMode(document.body.dataset.mode==='easy'?'expert':'easy'));
+    setMode(safeStorage.getItem('pantauan-mode')==='expert'?'expert':'easy');
     $('exportCsv').addEventListener('click',csvExport);
     $('periodFilter').addEventListener('change',e=>{D.filters.period=e.target.value;D.filters.grade='ALL';D.filters.room='ALL';render();});
     $('gradeFilter').addEventListener('change',e=>{D.filters.grade=e.target.value;D.filters.room='ALL';render();});
@@ -380,14 +438,9 @@
       document.body.classList.toggle('ifp-mode');
       toast(document.body.classList.contains('ifp-mode')?'Mode presentasi aktif: angka & grafik diperbesar.':'Mode presentasi nonaktif.');
     });
-    if(matchMedia('(pointer:fine)').matches&&!prefersReduced()){
-      document.addEventListener('pointermove',ev=>{
-        const aura=$('cursorAura');aura.style.transform=`translate3d(${ev.clientX-75}px,${ev.clientY-75}px,0)`;
-        aura.style.opacity='1';
-      },{passive:true});
-    }
     window.addEventListener('keydown',e=>{if(e.key==='Escape')showDialog(false);});
-    D.data=synthetic();status('Mode demo','demo');render();
+    if(restoreSession()) {status('Menghubungkan','');void getSummary().then(ok=>{if(!ok)showDialog();});}
+    else {D.data=synthetic();status('Mode demo','demo');render();showDialog(false);}
     if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(()=>{});
     D.tick=setInterval(()=>{if(D.active)void getSummary();},25000);
   }

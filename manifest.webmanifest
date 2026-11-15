@@ -1,0 +1,19 @@
+{
+  "name": "PANTAUAN — Pusat Analitik Nilai & Tracking Asesmen",
+  "short_name": "PANTAUAN",
+  "description": "Monitoring progres scan LJK dan rekap PSAS/ASAS dengan akses internal sekolah",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f8fe",
+  "theme_color": "#f5f8fe",
+  "lang": "id",
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

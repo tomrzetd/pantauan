@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="PANTAUAN radar">
+<rect width="512" height="512" rx="110" fill="#10283f"/>
+<circle cx="256" cy="244" r="162" stroke="#26717f" stroke-width="10" fill="none"/>
+<circle cx="256" cy="244" r="108" stroke="#268b91" stroke-width="9" fill="none"/>
+<circle cx="256" cy="244" r="55" stroke="#399b9c" stroke-width="7" fill="none"/>
+<path d="M256 244 392 116" stroke="#78f4da" stroke-width="12" stroke-linecap="round"/>
+<circle cx="256" cy="244" r="20" fill="#fff"/>
+<text x="256" y="431" text-anchor="middle" font-family="Arial,sans-serif" font-size="97" font-weight="800" fill="#78f4da">P</text>
+</svg>

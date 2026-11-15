@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f5f8ff">
+  <meta name="description" content="PANTAUAN — Pusat Analitik Nilai & Tracking Asesmen. Monitoring PSAS/ASAS untuk sekolah.">
+  <meta http-equiv="Referrer-Policy" content="no-referrer">
+  <title>PANTAUAN • PSAS / ASAS Monitoring</title>
+  <link rel="icon" type="image/png" href="assets/icon.svg">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="ambient-orb orb-one" aria-hidden="true"></div><div class="ambient-orb orb-two" aria-hidden="true"></div><div id="cursorAura" class="cursor-aura" aria-hidden="true"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"><span>P</span><i></i></span>
+        <div><strong>PANTAU<span class="teal">AN</span></strong><small>EXAM COMMAND CENTER</small></div>
+      </div>
+      <div class="side-caption">NAVIGASI</div>
+      <a class="nav-item active" href="#overview"><span class="nav-ico">▦</span> Ringkasan asesmen</a>
+      <a class="nav-item" href="#mapel"><span class="nav-ico">▥</span> Progres mata pelajaran</a>
+      <a class="nav-item" href="#rombel"><span class="nav-ico">▤</span> Monitoring rombel</a>
+      <a class="nav-item" href="#ujian"><span class="nav-ico">◫</span> Daftar ujian</a>
+      <a class="nav-item" href="#rekap"><span class="nav-ico">▤</span> Rekap nilai siswa</a>
+      <div class="side-spacer"></div>
+      <div class="side-card">
+        <div class="side-card-dot"></div>
+        <strong>Privasi terjaga</strong>
+        <p>Grafik berisi agregat. Rekap nama & nilai hanya dibuka dengan akses panitia yang sah, bukan di halaman publik.</p>
+      </div>
+      <div class="sidebar-footer">© 2026 PANTAUAN <span>•</span> Pendamping Buleud Teu</div>
+    </aside>
+
+    <div class="main-frame">
+      <header class="topbar">
+        <div class="topbar-left"><span class="overline">MONITORING AKADEMIK</span><span class="divider-inline"></span><span id="schoolNameShort">Dashboard Sekolah</span></div>
+        <div class="topbar-right"><span class="live-pill" id="connectionStatus"><span class="pulse-dot"></span> Mode demo</span><button class="btn icon-btn theme-btn" id="themeToggle" aria-label="Aktifkan tema gelap" title="Ganti tema terang/gelap">☾</button><button class="btn icon-btn" id="ifpToggle" aria-label="Aktifkan tampilan IFP" title="Mode presentasi / IFP">⛶</button><button class="btn icon-btn" id="openSettings" aria-label="Pengaturan koneksi" title="Konfigurasi koneksi">⚙</button></div>
+      </header>
+
+      <main class="main-content" id="overview">
+        <section class="page-heading">
+          <div class="heading-copy">
+            <div class="eyebrow"><span class="short-line"></span> PANTAUAN · ASSESSMENT COMMAND CENTER</div>
+            <h1>Monitoring <span class="heading-accent">PSAS / ASAS</span></h1>
+            <p id="schoolSubtitle">Rekap pemindaian LJK lintas mata pelajaran dan rombongan belajar.</p>
+            <div class="hero-chips"><span>✦ Monitoring lintas kelas</span><span>↗ Progres tersinkron</span><span>◉ Ringkasan nilai</span></div>
+          </div>
+          <div class="hero-motion" aria-hidden="true"><span class="float-disc disc-a">✓</span><span class="float-disc disc-b">↗</span><span class="float-disc disc-c">◉</span><div class="orbit-ring"></div><div class="hero-spark">✦</div></div>
+          <div class="heading-buttons">
+            <button class="btn secondary" id="exportCsv" title="Unduh rekap agregat sebagai CSV">↓ <span>Ekspor CSV</span></button>
+            <button class="btn primary" id="refreshBtn">↻ <span>Perbarui data</span></button>
+          </div>
+        </section>
+
+        <div class="demo-banner" id="demoBanner"><strong>PRATINJAU SIMULASI</strong><span>Angka di bawah adalah data contoh, bukan nilai sekolah. Sambungkan ke Apps Script untuk monitoring nyata.</span><button id="demoConnect">Hubungkan server</button></div>
+        <div class="filterbar" aria-label="Filter asesmen">
+          <div class="filter-label">TAMPILKAN</div>
+          <label>Asesmen<select id="periodFilter"><option value="ALL">Semua asesmen</option></select></label>
+          <label>Tingkat<select id="gradeFilter"><option value="ALL">Semua tingkat</option></select></label>
+          <label>Rombel<select id="roomFilter"><option value="ALL">Semua rombel</option></select></label>
+          <div class="updated-at" id="updatedAt">—</div>
+        </div>
+
+        <section class="metric-grid" aria-label="Indikator utama">
+          <article class="metric-card"><div class="metric-top"><span>PROGRES KESELURUHAN</span><span class="metric-icon mint">◉</span></div><div class="metric-main"><strong id="metricProgress">—</strong><span>hasil diterima</span></div><div class="metric-foot"><span id="metricProgressNote">Belum ada data</span><span class="up-arrow">↗</span></div></article>
+          <article class="metric-card"><div class="metric-top"><span>HASIL TERSIMPAN</span><span class="metric-icon blue">✓</span></div><div class="metric-main"><strong id="metricReceived">—</strong><span>LJK unik</span></div><div class="metric-foot"><span>Berhasil masuk server</span></div></article>
+          <article class="metric-card"><div class="metric-top"><span>BELUM MASUK</span><span class="metric-icon amber">◷</span></div><div class="metric-main"><strong id="metricPending">—</strong><span>LJK ditunggu</span></div><div class="metric-foot"><span>Berdasarkan peserta terdaftar</span></div></article>
+          <article class="metric-card"><div class="metric-top"><span>UJIAN TERDAFTAR</span><span class="metric-icon violet">▣</span></div><div class="metric-main"><strong id="metricExams">—</strong><span>ujian aktif</span></div><div class="metric-foot"><span id="metricMapel">— mata pelajaran</span></div></article>
+        </section>
+
+        <section class="visual-grid" id="mapel">
+          <article class="panel panel-subject">
+            <div class="panel-header"><div><div class="panel-kicker">DISTRIBUSI PEMINDAIAN</div><h2>Progres per mata pelajaran</h2><p>Persentase LJK yang sudah tersimpan di server</p></div><span class="panel-icon">▥</span></div>
+            <div id="subjectBars" class="bar-list" aria-live="polite"></div>
+          </article>
+          <article class="panel panel-donut">
+            <div class="panel-header"><div><div class="panel-kicker">KESELURUHAN ASESMEN</div><h2>Rasio penyelesaian</h2><p>Target peserta dan hasil diterima</p></div></div>
+            <div class="donut-area"><div class="donut" id="donut" role="img" aria-label="Persentase progres"><div class="donut-center"><strong id="donutValue">0%</strong><small>TERKUMPUL</small></div></div></div>
+            <div class="donut-legend"><div><i class="legend-icon done"></i> Hasil diterima <strong id="legendReceived">0</strong></div><div><i class="legend-icon undone"></i> Belum diterima <strong id="legendPending">0</strong></div></div>
+            <div class="panel-footnote">Dihitung berdasarkan peserta unik × ujian, bukan jumlah foto atau scan ulang.</div>
+          </article>
+        </section>
+
+        <section class="visual-grid second-grid" id="rombel">
+          <article class="panel">
+            <div class="panel-header"><div><div class="panel-kicker">PERBANDINGAN ROMBONGAN BELAJAR</div><h2>Progres per rombel</h2><p>Persentase hasil masuk untuk ujian yang terkait</p></div></div>
+            <div class="room-grid" id="roomBars"></div>
+          </article>
+          <article class="panel insight-panel">
+            <div class="panel-header"><div><div class="panel-kicker">INSIGHT PANITIA</div><h2>Perhatian khusus</h2><p>Pemantauan untuk ujian yang belum tuntas</p></div></div>
+            <div id="insights"></div>
+          </article>
+        </section>
+
+        <section class="panel heatmap-panel" id="heatmap">
+          <div class="panel-header"><div><div class="panel-kicker">PETA KETUNTASAN PEMINDAIAN</div><h2>Heatmap rombel × mata pelajaran</h2><p>Warna semakin kuat berarti semakin banyak hasil yang masuk. Tekan sel untuk fokus ke rombel.</p></div><span class="panel-icon">▦</span></div>
+          <div class="heatmap-scroll" id="heatmapContent"></div>
+        </section>
+
+        <section class="panel table-panel" id="ujian">
+          <div class="panel-header table-header"><div><div class="panel-kicker">DAFTAR UJIAN AKTIF</div><h2>Detail progres asesmen</h2><p>Setiap ujian dihitung dari siswa yang menjadi pesertanya</p></div><div class="table-search"><input id="searchExam" type="search" placeholder="Cari mapel atau guru..." aria-label="Cari ujian"></div></div>
+          <div class="table-scroll"><table><thead><tr><th>MATA PELAJARAN</th><th>TINGKAT</th><th>PESERTA</th><th>DITERIMA</th><th>PROGRES</th><th>RERATA NILAI</th><th>STATUS</th></tr></thead><tbody id="examTable"></tbody></table></div>
+          <div class="table-bottom" id="tableCount">—</div>
+        </section>
+        <section class="panel roster-panel" id="rekap">
+          <div class="panel-header roster-header"><div><div class="panel-kicker">AKSES PANITIA TEROTORISASI</div><h2>Rekap nilai per siswa</h2><p>Nama siswa, nomor peserta dan nilai tiap mapel. Nilai kosong = belum masuk, bukan nol.</p></div><span class="roster-shield">♙ AKSES INTERNAL</span></div>
+          <div class="roster-toolbar">
+            <label>Asesmen<select id="rosterPeriod"><option value="">Pilih asesmen</option></select></label>
+            <label>Tingkat<select id="rosterGrade"><option value="">Pilih tingkat</option></select></label>
+            <label>Rombel<select id="rosterRoom"><option value="">Pilih rombel</option></select></label>
+            <button id="loadRoster" class="btn primary" type="button">◉ Tampilkan rekap</button>
+            <button id="exportRoster" class="btn secondary" type="button" disabled>↓ CSV nilai</button>
+          </div>
+          <div class="roster-note" id="rosterHint">Pilih satu kelas lalu tekan <strong>Tampilkan rekap</strong>. Data asli hanya dibaca setelah panitia terhubung ke server.</div>
+          <div class="roster-search-row"><input id="searchStudent" type="search" placeholder="Cari nama atau nomor peserta…" aria-label="Cari nama atau nomor peserta" disabled><span id="rosterCount">—</span></div>
+          <div class="table-scroll roster-scroll"><table id="rosterTable"><thead id="rosterHead"></thead><tbody id="rosterBody"><tr><td class="empty">Belum ada rekap yang dibuka.</td></tr></tbody></table></div>
+          <div class="roster-bottom">Peringkat rombel ditampilkan hanya bagi siswa yang seluruh nilai ujiannya sudah lengkap. Untuk membandingkan antar-rombel, jumlah dan jenis mapel harus setara.</div>
+        </section>
+        <div class="bottom-note">Ringkasan grafik memakai statistik agregat; tabel nama/nomor/nilai hanya tersedia setelah autentikasi. Waktu pembaruan bergantung pada koneksi internet, antrean offline perangkat, dan cache ringkasan server. <span>●</span> Dibuat untuk monitoring, bukan menggantikan sumber nilai resmi.</div>
+      </main>
+    </div>
+  </div>
+
+  <div class="dialog-backdrop hidden" id="settingsDialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
+    <div class="dialog-box">
+      <div class="dialog-top"><div class="dialog-logo">P<span>·</span>A</div><button id="closeSettings" aria-label="Tutup" class="close-dialog">×</button></div>
+      <div class="dialog-kicker">KONEKSI DASHBOARD</div><h2 id="dialogTitle">Hubungkan ke database sekolah</h2>
+      <p>Gunakan URL <b>Apps Script Dashboard terpisah</b> yang telah disiapkan operator. Masukkan kode akses panitia. Kode tidak disimpan di localStorage.</p>
+      <form id="connectionForm">
+        <label>URL Web App Dashboard <input required id="serverInput" type="url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="url"></label>
+        <label>Kode akses panitia <input required id="keyInput" type="password" minlength="32" placeholder="Kode akses khusus panitia" autocomplete="off"></label>
+        <div class="form-feedback" id="connectionError"></div>
+        <button class="btn primary connect-btn" type="submit">Hubungkan & tampilkan data</button>
+      </form>
+      <div class="dialog-actions"><button class="text-btn" id="previewDemo">Lihat simulasi</button><button class="text-btn" id="disconnectBtn">Putuskan koneksi</button></div>
+    </div>
+  </div>
+
+  <script defer src="app.js"></script>
+</body>
+</html>

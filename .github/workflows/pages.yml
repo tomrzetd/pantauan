@@ -26,12 +26,13 @@ jobs:
         run: |
           node --check app.js
           node --check sw.js
-          test -f index.html && test -f manifest.webmanifest
+          node tests/public-registry.test.mjs
+          test -f index.html && test -f manifest.webmanifest && test -f schools.json
           ! grep -rE 'BT_LICENSE_HMAC_KEY|SHEET_ID=|ADMIN_KEY_SHA256=' index.html app.js styles.css sw.js manifest.webmanifest
       - name: Publish HANYA aset PWA publik
         run: |
           mkdir -p _site/assets
-          cp index.html app.js styles.css sw.js manifest.webmanifest .nojekyll _site/
+          cp index.html app.js styles.css sw.js schools.json manifest.webmanifest .nojekyll _site/
           cp assets/icon.svg _site/assets/
       - uses: actions/upload-pages-artifact@v3
         with:

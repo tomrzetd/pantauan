@@ -3,7 +3,7 @@
  * Never intercept/cache POST, school data, secrets, API endpoints or external origins.
  */
 const CACHE='pantauan-shell-v5';
-const ASSETS=['./','./index.html','./styles.css','./app.js','./manifest.webmanifest','./assets/icon.svg'];
+const ASSETS=['./','./index.html','./styles.css?v=3','./app.js?v=3','./manifest.webmanifest','./assets/icon.svg'];
 const ALLOWED=new Set(ASSETS.map(a=>new URL(a,self.registration.scope).pathname));
 self.addEventListener('install',e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()));
